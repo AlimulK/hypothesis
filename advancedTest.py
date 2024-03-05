@@ -1,38 +1,48 @@
-"""A basic hello world example of Hypothesis"""
+from hypothesis import given, strategies as st
+import numpy as np
 
-from hypothesis import example, given, strategies as st
-from hypothesis.strategies import text
-
-def encode(input_string):
-    count = 1
-    prev = ""
-    lst = []
-    for character in input_string:
-        if character != prev:
-            if prev:
-                entry = (prev, count)
-                lst.append(entry)
-            count = 1
-            prev = character
-        else:
-            count += 1
-    entry = (character, count)
-    lst.append(entry)
-    return lst
+effects_data = {'new_medication': [], 'existing_medication': []}
 
 
-def decode(lst):
-    q = ""
-    for character, count in lst:
-        q += character * count
-    return q
+# Simulate the effect of medications on blood pressure
+def new_medication(age, weight, baseline_bp):
+    # New medication effectiveness depends on age and baseline blood pressure
+    return baseline_bp - (10 + age / 10 + np.random.normal(0, 5))
 
-# This is the actual test
-@given(st.text())
-@example("")
-def test_decode_inverts_encode(s):
-    assert decode(encode(s)) == s
 
-# This needs to exist at the bottom of each test scenario so it'll be run
-if __name__ == "__main__":
-    test_decode_inverts_encode()
+def existing_medication(age, weight, baseline_bp):
+    # Existing medication effectiveness is constant
+    return baseline_bp - (15 + np.random.normal(0, 5))
+
+
+# Strategy for generating patient profiles
+patient_profile = st.fixed_dictionaries({
+    'age': st.integers(18, 80),
+    'weight': st.floats(50.0, 150.0),
+    'baseline_bp': st.floats(120.0, 180.0)
+})
+
+
+# Patient profile
+@given(patient_profile)
+def test_medication_effectiveness(patient):
+    age, weight, baseline_bp = patient['age'], patient['weight'], patient['baseline_bp']
+    new_bp = new_medication(age, weight, baseline_bp)
+    existing_bp = existing_medication(age, weight, baseline_bp)
+    effects_data['new_medication'].append(baseline_bp - new_bp)
+    effects_data['existing_medication'].append(baseline_bp - existing_bp)
+
+
+test_medication_effectiveness()
+
+# Calculate and print the average effect of each medication
+average_new_medication_effect = np.mean(effects_data['new_medication'])
+average_existing_medication_effect = np.mean(effects_data['existing_medication'])
+print(f"Average effect of new medication: {average_new_medication_effect}")
+print(f"Average effect of existing medication: {average_existing_medication_effect}")
+
+
+
+# if __name__ == '__main':
+#     test_medication_effectiveness(patient_profile)
+#     print("Passed")
