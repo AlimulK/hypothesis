@@ -1,7 +1,10 @@
 from hypothesis import given, strategies as st
 import numpy as np
 
-effects_data = {'new_medication': [], 'existing_medication': []}
+effects_data = {
+    'new_medication': [],
+    'existing_medication': []
+}
 
 
 # Simulate the effect of medications on blood pressure
